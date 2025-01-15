@@ -11,8 +11,8 @@ import io
 import magic
 from f5_tts.api import F5TTS
 import soundfile as sf
-import tempfile
 from pydub import AudioSegment
+import re
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,6 +42,14 @@ def convert_to_wav(input_path, output_path):
     audio = audio.set_frame_rate(22050)  # F5-TTS expects 22050Hz
     audio = audio.set_channels(1)  # Convert to mono
     audio.export(output_path, format='wav')
+
+def split_text_into_sentences(text):
+    """Split text into sentences using regex."""
+    # Split on common sentence endings
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    # Remove empty sentences and extra whitespace
+    sentences = [s.strip() for s in sentences if s.strip()]
+    return sentences
 
 class UploadAudioRequest(BaseModel):
     audio_file_label: str
@@ -198,17 +206,46 @@ async def synthesize_speech(
         else:
             reference_file = f'resources/{matching_files[0]}'
 
-        # Use a simple reference text instead of transcription
+        # Use a simple English reference text since we're using English voices
         ref_text = "This is a reference text for voice cloning."
         save_path = f'{output_dir}/output_synthesized.wav'
 
-        wav, sr, _ = model.infer(
-            ref_file=reference_file,
-            ref_text=ref_text,
-            gen_text=text,
-            speed=speed,
-            file_wave=save_path
-        )
+        # Split text into sentences
+        sentences = split_text_into_sentences(text)
+        logging.info(f"Processing {len(sentences)} sentences")
+
+        # Process each sentence separately
+        temp_files = []
+        for i, sentence in enumerate(sentences):
+            logging.info(f"Processing sentence {i+1}/{len(sentences)}: {sentence}")
+            temp_path = f'{output_dir}/temp_{i}.wav'
+            
+            # For English text, use English reference
+            wav, sr, _ = model.infer(
+                ref_file=reference_file,
+                ref_text=ref_text,
+                gen_text=sentence,
+                speed=speed,
+                file_wave=temp_path
+            )
+            temp_files.append(temp_path)
+
+        # Concatenate all temporary files
+        if len(temp_files) > 1:
+            combined = AudioSegment.empty()
+            for temp_file in temp_files:
+                audio = AudioSegment.from_wav(temp_file)
+                combined += audio
+                # Add a small silence between sentences
+                combined += AudioSegment.silent(duration=100)  # 100ms silence
+            combined.export(save_path, format='wav')
+        else:
+            os.rename(temp_files[0], save_path)
+
+        # Clean up temporary files
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
 
         result = StreamingResponse(open(save_path, 'rb'), media_type="audio/wav")
     except Exception as e:
