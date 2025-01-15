@@ -13,6 +13,7 @@ from f5_tts.api import F5TTS
 import soundfile as sf
 from pydub import AudioSegment
 import re
+from importlib.resources import files
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,11 +30,29 @@ app.add_middleware(
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-# Initialize F5-TTS model
-model = F5TTS(device=device)
+# Initialize F5-TTS model with English settings
+model = F5TTS(
+    device=device,
+    model_type="F5-TTS",
+    vocab_file=str(files("f5_tts").joinpath("infer/examples/vocab.txt")),
+    ode_method="euler",
+    use_ema=True,
+    vocoder_name="vocos"
+)
 
 output_dir = 'outputs'
 os.makedirs(output_dir, exist_ok=True)
+
+# Copy the English reference audio to resources if it doesn't exist
+resources_dir = 'resources'
+os.makedirs(resources_dir, exist_ok=True)
+default_ref_audio = str(files("f5_tts").joinpath("infer/examples/basic/basic_ref_en.wav"))
+default_ref_text = "Some call me nature, others call me mother nature."
+
+if not os.path.exists(f"{resources_dir}/default_en.wav"):
+    import shutil
+    shutil.copy2(default_ref_audio, f"{resources_dir}/default_en.wav")
+
 os.makedirs("resources", exist_ok=True)
 
 def convert_to_wav(input_path, output_path):
@@ -66,28 +85,10 @@ async def base_tts(text: str, accent: Optional[str] = 'en-newest', speed: Option
     Perform text-to-speech conversion using only the base speaker.
     """
     try:
-        save_path = f'{output_dir}/output_base.wav'
-        # Use a default reference audio for base TTS
-        ref_file = os.path.join("resources", "base_speaker.wav")
-        if not os.path.exists(ref_file):
-            # If no base speaker exists, use the example from F5-TTS
-            from importlib.resources import files
-            ref_file = str(files("f5_tts").joinpath("infer/examples/basic/basic_ref_en.wav"))
-            ref_text = "some call me nature, others call me mother nature."
-        else:
-            ref_text = "This is a reference text for the base speaker."
-
-        wav, sr, _ = model.infer(
-            ref_file=ref_file,
-            ref_text=ref_text,
-            gen_text=text,
-            speed=speed,
-            file_wave=save_path
-        )
-        
-        result = StreamingResponse(open(save_path, 'rb'), media_type="audio/wav")
-        return result
+        # Use the default English voice
+        return await synthesize_speech(text=text, voice="default_en", accent=accent, speed=speed)
     except Exception as e:
+        logging.error(f"Error in base_tts: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/change_voice/")
@@ -209,7 +210,10 @@ async def synthesize_speech(
         # Generate a reference text that matches the input style and length
         input_words = len(text.split())
         # Use the reference text that matches the reference audio file
-        ref_text = model.transcribe(reference_file)
+        if reference_file == f"{resources_dir}/default_en.wav":
+            ref_text = default_ref_text
+        else:
+            ref_text = model.transcribe(reference_file)
 
         save_path = f'{output_dir}/output_synthesized.wav'
 
