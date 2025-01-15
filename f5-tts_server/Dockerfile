@@ -24,3 +24,10 @@ RUN git clone https://github.com/SWivid/F5-TTS.git \
 ENV SHELL=/bin/bash
 
 WORKDIR /workspace/F5-TTS
+
+# Copy the start script
+COPY start.sh /workspace/F5-TTS/
+RUN chmod +x /workspace/F5-TTS/start.sh
+
+# Set the entrypoint to our start script
+ENTRYPOINT ["/workspace/F5-TTS/start.sh"]
