@@ -35,6 +35,7 @@ RUN mkdir -p /workspace/F5-TTS/server
 # Copy the server files
 COPY server.py /workspace/F5-TTS/server/
 COPY start.sh /workspace/F5-TTS/server/
+COPY demo_speaker.mp3 /workspace/F5-TTS/server/resources/demo_speaker0.mp3
 RUN chmod +x /workspace/F5-TTS/server/start.sh
 
 # Create necessary directories
