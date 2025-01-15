@@ -206,38 +206,63 @@ async def synthesize_speech(
         else:
             reference_file = f'resources/{matching_files[0]}'
 
-        # Use a simple English reference text since we're using English voices
-        ref_text = "This is a reference text for voice cloning."
+        # Generate a reference text that matches the input style and length
+        input_words = len(text.split())
+        if input_words < 10:
+            ref_text = "Hello there! I'm your virtual assistant. How can I help you today?"
+        elif input_words < 20:
+            ref_text = "Welcome everyone! I'm excited to be here with you today. Let me share some interesting thoughts about artificial intelligence."
+        else:
+            ref_text = "Hello everyone! I'm delighted to be here with you today. As we explore the fascinating world of artificial intelligence and technology, I want to share some insights about how these innovations are shaping our future. The possibilities are truly endless."
+
         save_path = f'{output_dir}/output_synthesized.wav'
 
-        # Split text into sentences
-        sentences = split_text_into_sentences(text)
-        logging.info(f"Processing {len(sentences)} sentences")
+        # Process text in larger chunks instead of individual sentences
+        chunks = []
+        current_chunk = []
+        current_length = 0
+        max_chunk_length = 100  # Maximum words per chunk
 
-        # Process each sentence separately
+        for sentence in split_text_into_sentences(text):
+            words_in_sentence = len(sentence.split())
+            if current_length + words_in_sentence > max_chunk_length and current_chunk:
+                chunks.append(" ".join(current_chunk))
+                current_chunk = [sentence]
+                current_length = words_in_sentence
+            else:
+                current_chunk.append(sentence)
+                current_length += words_in_sentence
+
+        if current_chunk:
+            chunks.append(" ".join(current_chunk))
+
+        # Process each chunk
         temp_files = []
-        for i, sentence in enumerate(sentences):
-            logging.info(f"Processing sentence {i+1}/{len(sentences)}: {sentence}")
+        for i, chunk in enumerate(chunks):
+            logging.info(f"Processing chunk {i+1}/{len(chunks)}")
             temp_path = f'{output_dir}/temp_{i}.wav'
             
-            # For English text, use English reference
             wav, sr, _ = model.infer(
                 ref_file=reference_file,
                 ref_text=ref_text,
-                gen_text=sentence,
+                gen_text=chunk,
                 speed=speed,
                 file_wave=temp_path
             )
             temp_files.append(temp_path)
 
-        # Concatenate all temporary files
+        # Concatenate all temporary files with smoother transitions
         if len(temp_files) > 1:
             combined = AudioSegment.empty()
-            for temp_file in temp_files:
+            crossfade_duration = 50  # 50ms crossfade
+            
+            for i, temp_file in enumerate(temp_files):
                 audio = AudioSegment.from_wav(temp_file)
-                combined += audio
-                # Add a small silence between sentences
-                combined += AudioSegment.silent(duration=100)  # 100ms silence
+                if i == 0:
+                    combined = audio
+                else:
+                    combined = combined.append(audio, crossfade=crossfade_duration)
+            
             combined.export(save_path, format='wav')
         else:
             os.rename(temp_files[0], save_path)
