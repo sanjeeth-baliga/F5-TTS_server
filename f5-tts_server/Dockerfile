@@ -11,6 +11,7 @@ RUN set -x \
     && apt-get -y install wget curl man git less openssl libssl-dev unzip unar build-essential aria2 tmux vim \
     && apt-get install -y openssh-server sox libsox-fmt-all libsox-fmt-mp3 libsndfile1-dev ffmpeg \
     && apt-get install -y librdmacm1 libibumad3 librdmacm-dev libibverbs1 libibverbs-dev ibverbs-utils ibverbs-providers \
+    && apt-get install -y libmagic1 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
     
@@ -22,7 +23,7 @@ RUN git clone https://github.com/SWivid/F5-TTS.git \
     && pip install -e . --no-cache-dir
 
 # Install FastAPI and uvicorn
-RUN pip install fastapi uvicorn python-multipart python-magic-bin
+RUN pip install fastapi uvicorn python-multipart python-magic
 
 ENV SHELL=/bin/bash
 
