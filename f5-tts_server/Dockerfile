@@ -23,10 +23,7 @@ RUN git clone https://github.com/SWivid/F5-TTS.git \
     && pip install -e . --no-cache-dir
 
 # Install FastAPI and other dependencies
-RUN pip install fastapi uvicorn python-multipart python-magic pydub nltk
-
-# Download NLTK data
-RUN python -c "import nltk; nltk.download('punkt')"
+RUN pip install fastapi uvicorn python-multipart python-magic pydub
 
 ENV SHELL=/bin/bash
 
