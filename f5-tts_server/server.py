@@ -208,8 +208,8 @@ async def synthesize_speech(
 
         # Generate a reference text that matches the input style and length
         input_words = len(text.split())
-        # Use a simple reference text that won't interfere with generation
-        ref_text = "This is a voice sample."
+        # Use the reference text that matches the reference audio file
+        ref_text = model.transcribe(reference_file)
 
         save_path = f'{output_dir}/output_synthesized.wav'
 
