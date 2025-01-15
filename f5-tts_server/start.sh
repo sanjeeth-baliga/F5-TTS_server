@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Change to the directory containing the server.py file
+cd "$(dirname "$0")"
+
 # Start the FastAPI server with uvicorn
 python -m uvicorn server:app --host 0.0.0.0 --port 7860
 
