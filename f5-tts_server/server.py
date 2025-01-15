@@ -10,6 +10,9 @@ import logging
 import io
 import magic
 from f5_tts.api import F5TTS
+import soundfile as sf
+import tempfile
+from pydub import AudioSegment
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,6 +35,13 @@ model = F5TTS(device=device)
 output_dir = 'outputs'
 os.makedirs(output_dir, exist_ok=True)
 os.makedirs("resources", exist_ok=True)
+
+def convert_to_wav(input_path, output_path):
+    """Convert any audio format to WAV using pydub."""
+    audio = AudioSegment.from_file(input_path)
+    audio = audio.set_frame_rate(22050)  # F5-TTS expects 22050Hz
+    audio = audio.set_channels(1)  # Convert to mono
+    audio.export(output_path, format='wav')
 
 class UploadAudioRequest(BaseModel):
     audio_file_label: str
@@ -81,7 +91,6 @@ async def change_voice(reference_speaker: str = Form(...), file: UploadFile = Fi
         logging.info(f'changing voice to {reference_speaker}...')
 
         contents = await file.read()
-        temp_file = io.BytesIO(contents)
         
         # Save the input audio temporarily
         input_path = f'{output_dir}/input_audio.wav'
@@ -94,6 +103,12 @@ async def change_voice(reference_speaker: str = Form(...), file: UploadFile = Fi
             raise HTTPException(status_code=400, detail="No matching reference speaker found.")
         
         reference_file = f'resources/{matching_files[0]}'
+        
+        # Convert reference file to WAV if it's not already
+        if not reference_file.lower().endswith('.wav'):
+            ref_wav_path = f'{output_dir}/ref_converted.wav'
+            convert_to_wav(reference_file, ref_wav_path)
+            reference_file = ref_wav_path
         
         # For voice conversion, we'll use the same text for both reference and generation
         # This helps maintain the timing and prosody
@@ -141,6 +156,10 @@ async def upload_audio(audio_file_label: str = Form(...), file: UploadFile = Fil
         with open(f"resources/{stored_file_name}", "wb") as f:
             f.write(contents)
 
+        # Also create a WAV version for F5-TTS
+        wav_path = f"resources/{audio_file_label}.wav"
+        convert_to_wav(f"resources/{stored_file_name}", wav_path)
+
         return {"message": f"File {file.filename} uploaded successfully with label {audio_file_label}."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -162,16 +181,25 @@ async def synthesize_speech(
         if watermark:
             logging.info(f'watermark: {watermark}')
 
-        # Retrieve the correct file based on the 'voice' parameter
-        matching_files = [file for file in os.listdir("resources") if file.startswith(voice)]
-
-        if not matching_files:
-            raise HTTPException(status_code=400, detail="No matching voice found.")
-
-        reference_file = f'resources/{matching_files[0]}'
+        # First try to find a WAV version
+        matching_files = [f for f in os.listdir("resources") if f.startswith(voice) and f.lower().endswith('.wav')]
         
-        # Get the reference text through transcription
-        ref_text = model.transcribe(reference_file)
+        # If no WAV found, try other formats and convert
+        if not matching_files:
+            matching_files = [f for f in os.listdir("resources") if f.startswith(voice)]
+            if not matching_files:
+                raise HTTPException(status_code=400, detail="No matching voice found.")
+            
+            # Convert to WAV
+            input_file = f'resources/{matching_files[0]}'
+            wav_path = f'{output_dir}/ref_converted.wav'
+            convert_to_wav(input_file, wav_path)
+            reference_file = wav_path
+        else:
+            reference_file = f'resources/{matching_files[0]}'
+
+        # Use a simple reference text instead of transcription
+        ref_text = "This is a reference text for voice cloning."
         save_path = f'{output_dir}/output_synthesized.wav'
 
         wav, sr, _ = model.infer(

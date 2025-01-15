@@ -23,7 +23,7 @@ RUN git clone https://github.com/SWivid/F5-TTS.git \
     && pip install -e . --no-cache-dir
 
 # Install FastAPI and uvicorn
-RUN pip install fastapi uvicorn python-multipart python-magic
+RUN pip install fastapi uvicorn python-multipart python-magic pydub
 
 ENV SHELL=/bin/bash
 
