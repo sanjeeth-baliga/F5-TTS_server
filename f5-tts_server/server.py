@@ -208,12 +208,8 @@ async def synthesize_speech(
 
         # Generate a reference text that matches the input style and length
         input_words = len(text.split())
-        if input_words < 10:
-            ref_text = "Hello there! I'm your virtual assistant. How can I help you today?"
-        elif input_words < 20:
-            ref_text = "Welcome everyone! I'm excited to be here with you today. Let me share some interesting thoughts about artificial intelligence."
-        else:
-            ref_text = "Hello everyone! I'm delighted to be here with you today. As we explore the fascinating world of artificial intelligence and technology, I want to share some insights about how these innovations are shaping our future. The possibilities are truly endless."
+        # Use a simple reference text that won't interfere with generation
+        ref_text = "This is a voice sample."
 
         save_path = f'{output_dir}/output_synthesized.wav'
 
