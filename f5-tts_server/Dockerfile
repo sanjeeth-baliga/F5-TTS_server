@@ -21,13 +21,26 @@ RUN git clone https://github.com/SWivid/F5-TTS.git \
     && git submodule update --init --recursive \
     && pip install -e . --no-cache-dir
 
+# Install FastAPI and uvicorn
+RUN pip install fastapi uvicorn python-multipart python-magic-bin
+
 ENV SHELL=/bin/bash
 
 WORKDIR /workspace/F5-TTS
 
-# Copy the start script
-COPY start.sh /workspace/F5-TTS/
-RUN chmod +x /workspace/F5-TTS/start.sh
+# Create directory for the server files
+RUN mkdir -p /workspace/F5-TTS/server
+
+# Copy the server files
+COPY server.py /workspace/F5-TTS/server/
+COPY start.sh /workspace/F5-TTS/server/
+RUN chmod +x /workspace/F5-TTS/server/start.sh
+
+# Create necessary directories
+RUN mkdir -p /workspace/F5-TTS/server/outputs /workspace/F5-TTS/server/resources
+
+# Set the working directory to the server directory
+WORKDIR /workspace/F5-TTS/server
 
 # Set the entrypoint to our start script
-ENTRYPOINT ["/workspace/F5-TTS/start.sh"]
+ENTRYPOINT ["./start.sh"]
