@@ -255,6 +255,8 @@ async def synthesize_speech(
                 ref_text=ref_text,
                 gen_text=chunk,
                 speed=speed,
+                nfe_step=50,  # Increase NFE steps for better quality
+                cfg_strength=2.5,  # Slightly increase CFG strength
                 file_wave=temp_path
             )
             temp_files.append(temp_path)
