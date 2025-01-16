@@ -14,6 +14,7 @@ import soundfile as sf
 from pydub import AudioSegment
 import re
 from importlib.resources import files
+from huggingface_hub import cached_path
 
 logging.basicConfig(level=logging.INFO)
 
@@ -34,10 +35,11 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = F5TTS(
     device=device,
     model_type="F5-TTS",
-    vocab_file=str(files("f5_tts").joinpath("infer/examples/vocab.txt")),
+    vocab_file="byte",  # Use byte tokenizer for English text
     ode_method="euler",
     use_ema=True,
-    vocoder_name="vocos"
+    vocoder_name="vocos",
+    ckpt_file=str(cached_path("hf://SWivid/F5-TTS/F5TTS_Base/model_1200000.safetensors"))  # Use the base model
 )
 
 output_dir = 'outputs'
