@@ -66,8 +66,7 @@ os.makedirs("resources", exist_ok=True)
 def convert_to_wav(input_path, output_path):
     """Convert any audio format to WAV using pydub."""
     audio = AudioSegment.from_file(input_path)
-    audio = audio.set_frame_rate(22050)  # F5-TTS expects 22050Hz
-    audio = audio.set_channels(1)  # Convert to mono
+    audio = audio.set_channels(1)  # Convert to mono only
     audio.export(output_path, format='wav')
 
 def split_text_into_sentences(text):
@@ -186,7 +185,7 @@ async def synthesize_speech(
         text: str,
         voice: str,
         accent: Optional[str] = 'en-newest',
-        speed: Optional[float] = 0.8,  # Slow down default speed for more natural speech
+        speed: Optional[float] = 1.0,  # Use original speed
         watermark: Optional[str] = "@F5-TTS"
 ):
     """
@@ -216,86 +215,38 @@ async def synthesize_speech(
             reference_file = f'resources/{matching_files[0]}'
 
         # Generate a reference text that matches the input style and length
-        input_words = len(text.split())
-        # Use the reference text that matches the reference audio file
         if reference_file == f"{resources_dir}/default_en.wav":
             ref_text = default_ref_text
         else:
             ref_text = model.transcribe(reference_file)
 
         save_path = f'{output_dir}/output_synthesized.wav'
-
-        # Process text in larger chunks instead of individual sentences
-        chunks = []
-        current_chunk = []
-        current_length = 0
-        max_chunk_length = 100  # Maximum words per chunk
-
-        for sentence in split_text_into_sentences(text):
-            words_in_sentence = len(sentence.split())
-            if current_length + words_in_sentence > max_chunk_length and current_chunk:
-                chunks.append(" ".join(current_chunk))
-                current_chunk = [sentence]
-                current_length = words_in_sentence
-            else:
-                current_chunk.append(sentence)
-                current_length += words_in_sentence
-
-        if current_chunk:
-            chunks.append(" ".join(current_chunk))
-
-        # Process each chunk
-        temp_files = []
-        for i, chunk in enumerate(chunks):
-            logging.info(f"Processing chunk {i+1}/{len(chunks)}")
-            temp_path = f'{output_dir}/temp_{i}.wav'
-            
-            wav, sr, _ = model.infer(
-                ref_file=reference_file,
-                ref_text=ref_text,
-                gen_text=chunk,
-                speed=speed,
-                nfe_step=50,  # Increase NFE steps for better quality
-                cfg_strength=2.5,  # Slightly increase CFG strength
-                file_wave=temp_path
-            )
-            temp_files.append(temp_path)
-
-        # Concatenate all temporary files with smoother transitions
-        if len(temp_files) > 1:
-            combined = AudioSegment.empty()
-            crossfade_duration = 50  # 50ms crossfade
-            
-            for i, temp_file in enumerate(temp_files):
-                audio = AudioSegment.from_wav(temp_file)
-                if i == 0:
-                    combined = audio
-                else:
-                    combined = combined.append(audio, crossfade=crossfade_duration)
-            
-            combined.export(save_path, format='wav')
-        else:
-            os.rename(temp_files[0], save_path)
-
-        # Clean up temporary files
-        for temp_file in temp_files:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
+        
+        # Use the model's built-in text chunking and processing
+        wav, sr, _ = model.infer(
+            ref_file=reference_file,
+            ref_text=ref_text,
+            gen_text=text,
+            speed=speed,
+            nfe_step=32,  # Use default
+            cfg_strength=2.0,  # Use default
+            file_wave=save_path
+        )
 
         result = StreamingResponse(open(save_path, 'rb'), media_type="audio/wav")
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+
+        result.headers["X-Elapsed-Time"] = str(elapsed_time)
+        result.headers["X-Device-Used"] = device
+
+        # Add CORS headers
+        result.headers["Access-Control-Allow-Origin"] = "*"
+        result.headers["Access-Control-Allow-Credentials"] = "true"
+        result.headers["Access-Control-Allow-Headers"] = "Origin, Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, locale"
+        result.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-
-    result.headers["X-Elapsed-Time"] = str(elapsed_time)
-    result.headers["X-Device-Used"] = device
-
-    # Add CORS headers
-    result.headers["Access-Control-Allow-Origin"] = "*"
-    result.headers["Access-Control-Allow-Credentials"] = "true"
-    result.headers["Access-Control-Allow-Headers"] = "Origin, Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, locale"
-    result.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-
-    return result
