@@ -41,6 +41,7 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = F5TTS(
     device=device,
     model_type="F5-TTS",
+    vocab_file=str(cached_path("hf://SWivid/F5-TTS/F5TTS_Base/vocab.txt")),  # Use official vocab file
     ode_method="euler",
     use_ema=True,
     vocoder_name="vocos",
@@ -87,7 +88,7 @@ async def startup_event():
     await synthesize_speech(test_text, voice)
 
 @app.get("/base_tts/")
-async def base_tts(text: str, accent: Optional[str] = 'en-newest', speed: Optional[float] = 1.0):
+async def base_tts(text: str, accent: Optional[str] = 'en-newest', speed: Optional[float] = 0.8):
     """
     Perform text-to-speech conversion using only the base speaker.
     """
@@ -185,7 +186,7 @@ async def synthesize_speech(
         text: str,
         voice: str,
         accent: Optional[str] = 'en-newest',
-        speed: Optional[float] = 1.0,
+        speed: Optional[float] = 0.8,  # Slow down default speed for more natural speech
         watermark: Optional[str] = "@F5-TTS"
 ):
     """
