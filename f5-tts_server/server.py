@@ -215,22 +215,18 @@ async def synthesize_speech(
         else:
             reference_file = f'resources/{matching_files[0]}'
 
-        # Generate a reference text that matches the input style and length
-        if reference_file == f"{resources_dir}/default_en.wav":
-            ref_text = default_ref_text
-        else:
-            ref_text = model.transcribe(reference_file)
-
+        # Use a short, simple reference text that won't interfere with generation
+        ref_text = "Test reference."
         save_path = f'{output_dir}/output_synthesized.wav'
         
         # Use the model's built-in text chunking and processing
         wav, sr, _ = model.infer(
             ref_file=reference_file,
-            ref_text=ref_text,
+            ref_text=ref_text,  # Use short reference text
             gen_text=text,
             speed=speed,
-            nfe_step=32,  # Use default
-            cfg_strength=2.0,  # Use default
+            nfe_step=32,
+            cfg_strength=2.0,
             file_wave=save_path
         )
 
