@@ -66,7 +66,8 @@ os.makedirs("resources", exist_ok=True)
 def convert_to_wav(input_path, output_path):
     """Convert any audio format to WAV using pydub."""
     audio = AudioSegment.from_file(input_path)
-    audio = audio.set_channels(1)  # Convert to mono only
+    audio = audio.set_channels(1)  # Convert to mono
+    audio = audio.set_frame_rate(24000)  # Set to F5-TTS expected sample rate
     audio.export(output_path, format='wav')
 
 def split_text_into_sentences(text):
@@ -185,7 +186,7 @@ async def synthesize_speech(
         text: str,
         voice: str,
         accent: Optional[str] = 'en-newest',
-        speed: Optional[float] = 1.0,  # Use original speed
+        speed: Optional[float] = 0.8,  # Slow down for more natural speech
         watermark: Optional[str] = "@F5-TTS"
 ):
     """
