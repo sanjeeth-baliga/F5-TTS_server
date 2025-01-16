@@ -215,8 +215,10 @@ async def synthesize_speech(
         else:
             reference_file = f'resources/{matching_files[0]}'
 
-        # Use the known working reference text from api.py example
-        ref_text = "some call me nature, others call me mother nature."
+        # Transcribe the reference audio to get the matching text
+        ref_text = model.transcribe(reference_file)
+        logging.info(f'Reference text transcribed: {ref_text}')
+        
         save_path = f'{output_dir}/output_synthesized.wav'
         
         # Use the model's built-in text chunking and processing
