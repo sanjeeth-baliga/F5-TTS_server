@@ -215,14 +215,14 @@ async def synthesize_speech(
         else:
             reference_file = f'resources/{matching_files[0]}'
 
-        # Use a short, simple reference text that won't interfere with generation
-        ref_text = "Test reference."
+        # Use the known working reference text from api.py example
+        ref_text = "some call me nature, others call me mother nature."
         save_path = f'{output_dir}/output_synthesized.wav'
         
         # Use the model's built-in text chunking and processing
         wav, sr, _ = model.infer(
             ref_file=reference_file,
-            ref_text=ref_text,  # Use short reference text
+            ref_text=ref_text,
             gen_text=text,
             speed=speed,
             nfe_step=32,
