@@ -42,9 +42,11 @@ model = F5TTS(
     device=device,
     model_type="F5-TTS",
     vocab_file=str(cached_path("hf://SWivid/F5-TTS/F5TTS_Base/vocab.txt")),  # Use official vocab file
-    ode_method="euler",
+    ode_method="dopri5",  # More accurate ODE solver
     use_ema=True,
     vocoder_name="vocos",
+    nfe_steps=50,  # Increase number of function evaluations for better quality
+    cfg_strength=2.5,  # Slightly increase classifier-free guidance strength
     ckpt_file=str(cached_path("hf://SWivid/F5-TTS/F5TTS_Base/model_1200000.safetensors"))  # Use the base model
 )
 
