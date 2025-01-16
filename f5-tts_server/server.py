@@ -219,8 +219,18 @@ async def synthesize_speech(
         if voice == "default_en":
             ref_text = default_ref_text
         else:
-            ref_text = model.transcribe(reference_file)
-            logging.info(f'Reference text transcribed: {ref_text}')
+            # First create a 15-second clip of the reference audio (matching model's limit)
+            temp_short_ref = f'{output_dir}/temp_short_ref.wav'
+            audio = AudioSegment.from_file(reference_file)
+            short_clip = audio[:15000]  # Get first 15 seconds
+            short_clip.export(temp_short_ref, format='wav')
+            
+            # Transcribe the short clip
+            ref_text = model.transcribe(temp_short_ref)
+            logging.info(f'Reference text transcribed from first 15s: {ref_text}')
+            
+            # Use the short clip as reference
+            reference_file = temp_short_ref
         
         save_path = f'{output_dir}/output_synthesized.wav'
         
