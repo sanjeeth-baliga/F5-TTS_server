@@ -41,7 +41,6 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = F5TTS(
     device=device,
     model_type="F5-TTS",
-    vocab_file=None,  # Set to None when using byte tokenizer
     ode_method="euler",
     use_ema=True,
     vocoder_name="vocos",
