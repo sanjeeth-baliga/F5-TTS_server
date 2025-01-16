@@ -3,18 +3,24 @@ import time
 import torch
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from typing import Optional
-from pydantic import BaseModel
-import logging
-import io
-import magic
-from f5_tts.api import F5TTS
+import torchaudio
 import soundfile as sf
 from pydub import AudioSegment
 import re
 from importlib.resources import files
 from cached_path import cached_path
+import sys
+import logging
+import io
+import magic
+from pydantic import BaseModel
+
+# Add F5-TTS root directory to path so we can import modules
+sys.path.append("/workspace/F5-TTS")
+
+from f5_tts.api import F5TTS
 
 logging.basicConfig(level=logging.INFO)
 
@@ -35,7 +41,7 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 model = F5TTS(
     device=device,
     model_type="F5-TTS",
-    vocab_file="byte",  # Use byte tokenizer for English text
+    vocab_file=None,  # Set to None when using byte tokenizer
     ode_method="euler",
     use_ema=True,
     vocoder_name="vocos",
