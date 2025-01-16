@@ -14,7 +14,7 @@ import soundfile as sf
 from pydub import AudioSegment
 import re
 from importlib.resources import files
-from huggingface_hub import cached_path
+from cached_path import cached_path
 
 logging.basicConfig(level=logging.INFO)
 
