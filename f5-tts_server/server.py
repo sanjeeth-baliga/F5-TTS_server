@@ -215,9 +215,12 @@ async def synthesize_speech(
         else:
             reference_file = f'resources/{matching_files[0]}'
 
-        # Transcribe the reference audio to get the matching text
-        ref_text = model.transcribe(reference_file)
-        logging.info(f'Reference text transcribed: {ref_text}')
+        # Use default text for default voice, transcribe for others
+        if voice == "default_en":
+            ref_text = default_ref_text
+        else:
+            ref_text = model.transcribe(reference_file)
+            logging.info(f'Reference text transcribed: {ref_text}')
         
         save_path = f'{output_dir}/output_synthesized.wav'
         
