@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse, FileResponse
 from typing import Optional
 import torchaudio
 import soundfile as sf
-from pydub import AudioSegment
+from pydub import AudioSegment, silence
 import re
 from importlib.resources import files
 from cached_path import cached_path
@@ -77,6 +77,20 @@ def split_text_into_sentences(text):
     # Remove empty sentences and extra whitespace
     sentences = [s.strip() for s in sentences if s.strip()]
     return sentences
+
+def detect_leading_silence(audio, silence_threshold=-42, chunk_size=10):
+    """Detect silence at the beginning of the audio."""
+    trim_ms = 0
+    while audio[trim_ms:trim_ms + chunk_size].dBFS < silence_threshold and trim_ms < len(audio):
+        trim_ms += chunk_size
+    return trim_ms
+
+def remove_silence_edges(audio, silence_threshold=-42):
+    """Remove silence from the beginning and end of the audio."""
+    start_trim = detect_leading_silence(audio, silence_threshold)
+    end_trim = detect_leading_silence(audio.reverse(), silence_threshold)
+    duration = len(audio)
+    return audio[start_trim:duration - end_trim]
 
 class UploadAudioRequest(BaseModel):
     audio_file_label: str
@@ -219,11 +233,42 @@ async def synthesize_speech(
         if voice == "default_en":
             ref_text = default_ref_text
         else:
-            # First create a 14-second clip of the reference audio (just under model's limit)
+            # Process reference audio with silence detection for natural clipping
             temp_short_ref = f'{output_dir}/temp_short_ref.wav'
-            audio = AudioSegment.from_file(reference_file)
-            short_clip = audio[:14000]  # Get first 14 seconds
-            short_clip.export(temp_short_ref, format='wav')
+            aseg = AudioSegment.from_file(reference_file)
+
+            # 1. try to find long silence for clipping
+            non_silent_segs = silence.split_on_silence(
+                aseg, min_silence_len=1000, silence_thresh=-50, keep_silence=1000, seek_step=10
+            )
+            non_silent_wave = AudioSegment.silent(duration=0)
+            for non_silent_seg in non_silent_segs:
+                if len(non_silent_wave) > 6000 and len(non_silent_wave + non_silent_seg) > 15000:
+                    logging.info("Audio is over 15s, clipping short. (1)")
+                    break
+                non_silent_wave += non_silent_seg
+
+            # 2. try to find short silence for clipping if 1. failed
+            if len(non_silent_wave) > 15000:
+                non_silent_segs = silence.split_on_silence(
+                    aseg, min_silence_len=100, silence_thresh=-40, keep_silence=1000, seek_step=10
+                )
+                non_silent_wave = AudioSegment.silent(duration=0)
+                for non_silent_seg in non_silent_segs:
+                    if len(non_silent_wave) > 6000 and len(non_silent_wave + non_silent_seg) > 15000:
+                        logging.info("Audio is over 15s, clipping short. (2)")
+                        break
+                    non_silent_wave += non_silent_seg
+
+            aseg = non_silent_wave
+
+            # 3. if no proper silence found for clipping
+            if len(aseg) > 15000:
+                aseg = aseg[:15000]
+                logging.info("Audio is over 15s, clipping short. (3)")
+
+            aseg = remove_silence_edges(aseg) + AudioSegment.silent(duration=50)
+            aseg.export(temp_short_ref, format='wav')
             
             # Transcribe the short clip
             ref_text = model.transcribe(temp_short_ref)
