@@ -102,13 +102,13 @@ async def startup_event():
     await synthesize_speech(test_text, voice)
 
 @app.get("/base_tts/")
-async def base_tts(text: str, accent: Optional[str] = 'en-newest', speed: Optional[float] = 1.0):
+async def base_tts(text: str, speed: Optional[float] = 1.0):
     """
     Perform text-to-speech conversion using only the base speaker.
     """
     try:
         # Use the default English voice
-        return await synthesize_speech(text=text, voice="default_en", accent=accent, speed=speed)
+        return await synthesize_speech(text=text, voice="default_en", speed=speed)
     except Exception as e:
         logging.error(f"Error in base_tts: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -199,8 +199,7 @@ async def upload_audio(audio_file_label: str = Form(...), file: UploadFile = Fil
 async def synthesize_speech(
         text: str,
         voice: str,
-        accent: Optional[str] = 'en-newest',
-        speed: Optional[float] = 1.0,  # Slow down for more natural speech
+        speed: Optional[float] = 1.0,
 ):
     """
     Synthesize speech from text using a specified voice and style.
