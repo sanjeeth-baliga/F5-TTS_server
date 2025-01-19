@@ -10,7 +10,6 @@ This project is built on top of [F5-TTS](https://github.com/SWivid/F5-TTS), a te
 - Voice cloning capabilities
 - Adjustable speech speed
 - Audio file upload and processing
-- Watermarking support
 
 ## Installation
 
@@ -61,7 +60,6 @@ Changes the voice of an existing audio file.
 **Parameters:**
 - `reference_speaker` (str): The reference speaker name
 - `file` (file): Audio file to process
-- `watermark` (str, optional): Watermark to encode. Default: '@F5-TTS'
 
 ### 3. Upload Audio
 
@@ -88,7 +86,6 @@ Synthesize speech using a specific voice and style.
 - `voice` (str): Voice to use
 - `accent` (str, optional): Accent to use. Default: 'en-newest'
 - `speed` (float, optional): Speech speed. Default: 0.8
-- `watermark` (str, optional): Watermark to encode. Default: '@F5-TTS'
 
 ## Response Headers
 
