@@ -1,170 +1,125 @@
-# F5-TTS: A Fairytaler that Fakes Fluent and Faithful Speech with Flow Matching
+# F5-TTS Server
 
-[![python](https://img.shields.io/badge/Python-3.10-brightgreen)](https://github.com/SWivid/F5-TTS)
-[![arXiv](https://img.shields.io/badge/arXiv-2410.06885-b31b1b.svg?logo=arXiv)](https://arxiv.org/abs/2410.06885)
-[![demo](https://img.shields.io/badge/GitHub-Demo%20page-orange.svg)](https://swivid.github.io/F5-TTS/)
-[![hfspace](https://img.shields.io/badge/🤗-Space%20demo-yellow)](https://huggingface.co/spaces/mrfakename/E2-F5-TTS)
-[![msspace](https://img.shields.io/badge/🤖-Space%20demo-blue)](https://modelscope.cn/studios/modelscope/E2-F5-TTS)
-[![lab](https://img.shields.io/badge/X--LANCE-Lab-grey?labelColor=lightgrey)](https://x-lance.sjtu.edu.cn/)
-[![lab](https://img.shields.io/badge/Peng%20Cheng-Lab-grey?labelColor=lightgrey)](https://www.pcl.ac.cn)
-<!-- <img src="https://github.com/user-attachments/assets/12d7749c-071a-427c-81bf-b87b91def670" alt="Watermark" style="width: 40px; height: auto"> -->
+F5-TTS Server is a FastAPI application that provides endpoints for text-to-speech conversion and voice cloning. It offers a simple and efficient way to generate natural-sounding speech from text using various voices and accents.
 
-**F5-TTS**: Diffusion Transformer with ConvNeXt V2, faster trained and inference.
+## Features
 
-**E2 TTS**: Flat-UNet Transformer, closest reproduction from [paper](https://arxiv.org/abs/2406.18009).
-
-**Sway Sampling**: Inference-time flow step sampling strategy, greatly improves performance
-
-### Thanks to all the contributors !
-
-## News
-- **2024/10/08**: F5-TTS & E2 TTS base models on [🤗 Hugging Face](https://huggingface.co/SWivid/F5-TTS), [🤖 Model Scope](https://www.modelscope.cn/models/SWivid/F5-TTS_Emilia-ZH-EN), [🟣 Wisemodel](https://wisemodel.cn/models/SJTU_X-LANCE/F5-TTS_Emilia-ZH-EN).
+- Text-to-speech conversion with customizable voices
+- Voice cloning capabilities
+- Adjustable speech speed
+- Audio file upload and processing
+- Watermarking support
 
 ## Installation
 
-```bash
-# Create a python 3.10 conda env (you could also use virtualenv)
-conda create -n f5-tts python=3.10
-conda activate f5-tts
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ValyrianTech/F5-TTS_server.git
+   ```
+2. Navigate to the project directory:
+   ```bash
+   cd F5-TTS_server
+   ```
+3. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-# NVIDIA GPU: install pytorch with your CUDA version, e.g.
-pip install torch==2.3.0+cu118 torchaudio==2.3.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+## Usage
 
-# AMD GPU: install pytorch with your ROCm version, e.g.
-pip install torch==2.5.1+rocm6.2 torchaudio==2.5.1+rocm6.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2
-```
-
-Then you can choose from a few options below:
-
-### 1. As a pip package (if just for inference)
-
-```bash
-pip install git+https://github.com/SWivid/F5-TTS.git
-```
-
-### 2. Local editable (if also do training, finetuning)
+To start the server, run:
 
 ```bash
-git clone https://github.com/SWivid/F5-TTS.git
-cd F5-TTS
-# git submodule update --init --recursive  # (optional, if need bigvgan)
-pip install -e .
+uvicorn f5-tts_server.server:app --host 0.0.0.0 --port 8000
 ```
 
-### 3. Docker usage
-```bash
-# Build from Dockerfile
-docker build -t f5tts:v1 .
+The server provides the following endpoints:
 
-# Or pull from GitHub Container Registry
-docker pull ghcr.io/swivid/f5-tts:main
-```
+### 1. Base Text-to-Speech
 
+Performs text-to-speech conversion using the base speaker.
 
-## Inference
+**Endpoint:** `/base_tts/`
 
-### 1. Gradio App
+**Method:** `GET`
 
-Currently supported features:
+**Parameters:**
+- `text` (str): The text to convert to speech
+- `accent` (str, optional): The accent to use. Default: 'en-newest'
+- `speed` (float, optional): Speech speed. Default: 0.8
 
-- Basic TTS with Chunk Inference
-- Multi-Style / Multi-Speaker Generation
-- Voice Chat powered by Qwen2.5-3B-Instruct
-- [Custom inference with more language support](src/f5_tts/infer/SHARED.md)
+### 2. Voice Change
 
-```bash
-# Launch a Gradio app (web interface)
-f5-tts_infer-gradio
+Changes the voice of an existing audio file.
 
-# Specify the port/host
-f5-tts_infer-gradio --port 7860 --host 0.0.0.0
+**Endpoint:** `/change_voice/`
 
-# Launch a share link
-f5-tts_infer-gradio --share
-```
+**Method:** `POST`
 
-### 2. CLI Inference
+**Parameters:**
+- `reference_speaker` (str): The reference speaker name
+- `file` (file): Audio file to process
+- `watermark` (str, optional): Watermark to encode. Default: '@F5-TTS'
 
-```bash
-# Run with flags
-# Leave --ref_text "" will have ASR model transcribe (extra GPU memory usage)
-f5-tts_infer-cli \
---model "F5-TTS" \
---ref_audio "ref_audio.wav" \
---ref_text "The content, subtitle or transcription of reference audio." \
---gen_text "Some text you want TTS model generate for you."
+### 3. Upload Audio
 
-# Run with default setting. src/f5_tts/infer/examples/basic/basic.toml
-f5-tts_infer-cli
-# Or with your own .toml file
-f5-tts_infer-cli -c custom.toml
+Upload a reference audio file for voice cloning.
 
-# Multi voice. See src/f5_tts/infer/README.md
-f5-tts_infer-cli -c src/f5_tts/infer/examples/multi/story.toml
-```
+**Endpoint:** `/upload_audio/`
 
-### 3. More instructions
+**Method:** `POST`
 
-- In order to have better generation results, take a moment to read [detailed guidance](src/f5_tts/infer).
-- The [Issues](https://github.com/SWivid/F5-TTS/issues?q=is%3Aissue) are very useful, please try to find the solution by properly searching the keywords of problem encountered. If no answer found, then feel free to open an issue.
+**Parameters:**
+- `audio_file_label` (str): Label for the uploaded audio
+- `file` (file): Audio file to upload
 
+### 4. Synthesize Speech
 
-## Training
+Synthesize speech using a specific voice and style.
 
-### 1. Gradio App
+**Endpoint:** `/synthesize_speech/`
 
-Read [training & finetuning guidance](src/f5_tts/train) for more instructions.
+**Method:** `GET`
 
-```bash
-# Quick start with Gradio web interface
-f5-tts_finetune-gradio
-```
+**Parameters:**
+- `text` (str): Text to synthesize
+- `voice` (str): Voice to use
+- `accent` (str, optional): Accent to use. Default: 'en-newest'
+- `speed` (float, optional): Speech speed. Default: 0.8
+- `watermark` (str, optional): Watermark to encode. Default: '@F5-TTS'
 
+## Response Headers
 
-## [Evaluation](src/f5_tts/eval)
+All synthesis endpoints include these response headers:
+- `x-elapsed-time`: Time taken for synthesis (seconds)
+- `x-device-used`: Device used for synthesis (CPU/GPU)
 
+## Example Usage
 
-## Development
+```python
+import requests
 
-Use pre-commit to ensure code quality (will run linters and formatters automatically)
-
-```bash
-pip install pre-commit
-pre-commit install
-```
-
-When making a pull request, before each commit, run: 
-
-```bash
-pre-commit run --all-files
-```
-
-Note: Some model components have linting exceptions for E722 to accommodate tensor notation
-
-
-## Acknowledgements
-
-- [E2-TTS](https://arxiv.org/abs/2406.18009) brilliant work, simple and effective
-- [Emilia](https://arxiv.org/abs/2407.05361), [WenetSpeech4TTS](https://arxiv.org/abs/2406.05763), [LibriTTS](https://arxiv.org/abs/1904.02882), [LJSpeech](https://keithito.com/LJ-Speech-Dataset/) valuable datasets
-- [lucidrains](https://github.com/lucidrains) initial CFM structure with also [bfs18](https://github.com/bfs18) for discussion
-- [SD3](https://arxiv.org/abs/2403.03206) & [Hugging Face diffusers](https://github.com/huggingface/diffusers) DiT and MMDiT code structure
-- [torchdiffeq](https://github.com/rtqichen/torchdiffeq) as ODE solver, [Vocos](https://huggingface.co/charactr/vocos-mel-24khz) and [BigVGAN](https://github.com/NVIDIA/BigVGAN) as vocoder
-- [FunASR](https://github.com/modelscope/FunASR), [faster-whisper](https://github.com/SYSTRAN/faster-whisper), [UniSpeech](https://github.com/microsoft/UniSpeech), [SpeechMOS](https://github.com/tarepan/SpeechMOS) for evaluation tools
-- [ctc-forced-aligner](https://github.com/MahmoudAshraf97/ctc-forced-aligner) for speech edit test
-- [mrfakename](https://x.com/realmrfakename) huggingface space demo ~
-- [f5-tts-mlx](https://github.com/lucasnewman/f5-tts-mlx/tree/main) Implementation with MLX framework by [Lucas Newman](https://github.com/lucasnewman)
-- [F5-TTS-ONNX](https://github.com/DakeQQ/F5-TTS-ONNX) ONNX Runtime version by [DakeQQ](https://github.com/DakeQQ)
-
-## Citation
-If our work and codebase is useful for you, please cite as:
-```
-@article{chen-etal-2024-f5tts,
-      title={F5-TTS: A Fairytaler that Fakes Fluent and Faithful Speech with Flow Matching}, 
-      author={Yushen Chen and Zhikang Niu and Ziyang Ma and Keqi Deng and Chunhui Wang and Jian Zhao and Kai Yu and Xie Chen},
-      journal={arXiv preprint arXiv:2410.06885},
-      year={2024},
+# Basic text-to-speech
+url = "http://localhost:8000/base_tts/"
+params = {
+    "text": "Hello, this is a test.",
+    "accent": "en-newest",
+    "speed": 0.8
 }
-```
-## License
 
-Our code is released under MIT License. The pre-trained models are licensed under the CC-BY-NC license due to the training data Emilia, which is an in-the-wild dataset. Sorry for any inconvenience this may cause.
+response = requests.get(url, params=params)
+with open("output.wav", "wb") as f:
+    f.write(response.content)
+
+# Voice cloning
+url = "http://localhost:8000/synthesize_speech/"
+params = {
+    "text": "Hello, this is a test.",
+    "voice": "custom_voice",
+    "accent": "en-newest",
+    "speed": 0.8
+}
+
+response = requests.get(url, params=params)
+with open("cloned_voice.wav", "wb") as f:
+    f.write(response.content)
