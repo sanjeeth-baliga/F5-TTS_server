@@ -114,7 +114,7 @@ async def base_tts(text: str, accent: Optional[str] = 'en-newest', speed: Option
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/change_voice/")
-async def change_voice(reference_speaker: str = Form(...), file: UploadFile = File(...), watermark: Optional[str] = "@F5-TTS"):
+async def change_voice(reference_speaker: str = Form(...), file: UploadFile = File(...)):
     """
     Change the voice of an existing audio file.
     """
@@ -201,7 +201,6 @@ async def synthesize_speech(
         voice: str,
         accent: Optional[str] = 'en-newest',
         speed: Optional[float] = 0.8,  # Slow down for more natural speech
-        watermark: Optional[str] = "@F5-TTS"
 ):
     """
     Synthesize speech from text using a specified voice and style.
@@ -209,8 +208,6 @@ async def synthesize_speech(
     start_time = time.time()
     try:
         logging.info(f'Generating speech for {voice}')
-        if watermark:
-            logging.info(f'watermark: {watermark}')
 
         # First try to find a WAV version
         matching_files = [f for f in os.listdir("resources") if f.startswith(voice) and f.lower().endswith('.wav')]
