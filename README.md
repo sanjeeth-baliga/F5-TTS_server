@@ -107,6 +107,18 @@ response = requests.get(url, params=params)
 with open("output.wav", "wb") as f:
     f.write(response.content)
 
+# Upload reference audio
+url = "http://localhost:7860/upload_audio/"
+files = {
+    'file': ('reference.wav', open('reference.wav', 'rb'), 'audio/wav')
+}
+data = {
+    'audio_file_label': 'custom_voice'
+}
+
+response = requests.post(url, files=files, data=data)
+print(response.json())  # Should print: {"message": "File reference.wav uploaded successfully with label custom_voice."}
+
 # Voice cloning
 url = "http://localhost:7860/synthesize_speech/"
 params = {
@@ -118,3 +130,4 @@ params = {
 response = requests.get(url, params=params)
 with open("cloned_voice.wav", "wb") as f:
     f.write(response.content)
+```
