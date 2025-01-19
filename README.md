@@ -4,6 +4,11 @@ F5-TTS Server is a FastAPI application that provides endpoints for text-to-speec
 
 This project is built on top of [F5-TTS](https://github.com/SWivid/F5-TTS), a text-to-speech system that enables high-quality voice synthesis and cloning.
 
+## RunPod
+
+There is a RunPod template for this project: [https://runpod.io/console/deploy?template=x9wtzn9izl&ref=2vdt3dn9](https://runpod.io/console/deploy?template=x9wtzn9izl&ref=2vdt3dn9)
+The cheapest GPU is enough to run the server.
+
 ## Features
 
 - Text-to-speech conversion with customizable voices
