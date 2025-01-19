@@ -31,7 +31,7 @@ This project is built on top of [F5-TTS](https://github.com/SWivid/F5-TTS), a te
 To start the server, run:
 
 ```bash
-uvicorn f5-tts_server.server:app --host 0.0.0.0 --port 8000
+uvicorn f5-tts_server.server:app --host 0.0.0.0 --port 7860
 ```
 
 The server provides the following endpoints:
@@ -97,7 +97,7 @@ All synthesis endpoints include these response headers:
 import requests
 
 # Basic text-to-speech
-url = "http://localhost:8000/base_tts/"
+url = "http://localhost:7860/base_tts/"
 params = {
     "text": "Hello, this is a test.",
     "speed": 1.0
@@ -108,7 +108,7 @@ with open("output.wav", "wb") as f:
     f.write(response.content)
 
 # Voice cloning
-url = "http://localhost:8000/synthesize_speech/"
+url = "http://localhost:7860/synthesize_speech/"
 params = {
     "text": "Hello, this is a test.",
     "voice": "custom_voice",
