@@ -47,7 +47,7 @@ Performs text-to-speech conversion using the base speaker.
 **Parameters:**
 - `text` (str): The text to convert to speech
 - `accent` (str, optional): The accent to use. Default: 'en-newest'
-- `speed` (float, optional): Speech speed. Default: 0.8
+- `speed` (float, optional): Speech speed. Default: 1.0
 
 ### 2. Voice Change
 
@@ -85,7 +85,7 @@ Synthesize speech using a specific voice and style.
 - `text` (str): Text to synthesize
 - `voice` (str): Voice to use
 - `accent` (str, optional): Accent to use. Default: 'en-newest'
-- `speed` (float, optional): Speech speed. Default: 0.8
+- `speed` (float, optional): Speech speed. Default: 1.0
 
 ## Response Headers
 
@@ -103,7 +103,7 @@ url = "http://localhost:8000/base_tts/"
 params = {
     "text": "Hello, this is a test.",
     "accent": "en-newest",
-    "speed": 0.8
+    "speed": 1.0
 }
 
 response = requests.get(url, params=params)
@@ -116,7 +116,7 @@ params = {
     "text": "Hello, this is a test.",
     "voice": "custom_voice",
     "accent": "en-newest",
-    "speed": 0.8
+    "speed": 1.0
 }
 
 response = requests.get(url, params=params)

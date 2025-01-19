@@ -102,7 +102,7 @@ async def startup_event():
     await synthesize_speech(test_text, voice)
 
 @app.get("/base_tts/")
-async def base_tts(text: str, accent: Optional[str] = 'en-newest', speed: Optional[float] = 0.8):
+async def base_tts(text: str, accent: Optional[str] = 'en-newest', speed: Optional[float] = 1.0):
     """
     Perform text-to-speech conversion using only the base speaker.
     """
@@ -200,7 +200,7 @@ async def synthesize_speech(
         text: str,
         voice: str,
         accent: Optional[str] = 'en-newest',
-        speed: Optional[float] = 0.8,  # Slow down for more natural speech
+        speed: Optional[float] = 1.0,  # Slow down for more natural speech
 ):
     """
     Synthesize speech from text using a specified voice and style.
