@@ -286,11 +286,12 @@ async def synthesize_speech(
             file_wave=save_path
         )
 
-        result = StreamingResponse(open(save_path, 'rb'), media_type="audio/wav")
+        #result = StreamingResponse(open(save_path, 'rb'), media_type="audio/wav")
 
         end_time = time.time()
         elapsed_time = end_time - start_time
 
+        """
         result.headers["X-Elapsed-Time"] = str(elapsed_time)
         result.headers["X-Device-Used"] = device
 
@@ -299,7 +300,23 @@ async def synthesize_speech(
         result.headers["Access-Control-Allow-Credentials"] = "true"
         result.headers["Access-Control-Allow-Headers"] = "Origin, Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, locale"
         result.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-
-        return result
+        """
+        # Prepare headers
+        headers = {
+            "X-Elapsed-Time": str(elapsed_time),
+            "X-Device-Used": device,
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "Origin, Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, locale",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+        }
+        return FileResponse(
+            path=save_path,
+            media_type="audio/wav",
+            filename="output_synthesized.wav",
+            headers=headers,  # ✅ Attach headers
+        )
+        
+        #return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
