@@ -197,9 +197,9 @@ async def upload_audio(audio_file_label: str = Form(...), file: UploadFile = Fil
 
 @app.get("/synthesize_speech/")
 async def synthesize_speech(
-        text: str = Query(..., description="Text to synthesize"),
-        voice: str = Query(..., description="Voice identifier"),
-        speed: Optional[float] = Query(1.0, description="Speed factor of speech"),
+        text: str,
+        voice: str,
+        speed: Optional[float] = 1.0,
 ):
     """
     Synthesize speech from text using a specified voice and style.
